@@ -56,10 +56,10 @@ const state = {
       ${
         url
           ? `
-          <img width='100%' src=${url} alt='card image cap' class='img-fluid place__holder__image mb-3' />
+          <img width='100%' height='150px' style="object-fit: cover; object-position: center" src=${url} alt='card image cap' class='img-fluid place__holder__image mb-3' />
         `
           : `
-        <img width='100%' src="https://reactnativecode.com/wp-content/uploads/2018/02/Default_Image_Thumbnail.png" alt='card image cap' class='img-fluid place__holder__image mb-3' />
+        <img width='100%' height='150px' style="object-fit: cover; object-position: center" src="https://reactnativecode.com/wp-content/uploads/2018/02/Default_Image_Thumbnail.png" alt='card image cap' class='img-fluid place__holder__image mb-3' />
         `
       }
       <strong class='text-sm text-muted'>Created on ${date.toDateString()}</strong>
@@ -121,6 +121,127 @@ const openTask = (e) => {
   const getTask = state.taskList.find(({ id }) => id === e.target.id );
   taskModal.innerHTML = htmlModalContent(getTask);
 };
+
+const deleteTask = (e) => {
+  if (!e) e = window.event;
+  const targetID = e.target.getAttribute("name");
+  const type = e.target.tagName;
+  const removeTask = state.taskList.filter(({ id }) => id !== targetID );
+  state.taskList = removeTask;
+
+  updateLocalStorage();
+  if (type === "BUTTON") {
+    return e.target.parentNode.parentNode.parentNode.parentNode.removeChild(
+      e.target.parentNode.parentNode.parentNode
+    );
+  }
+
+  return e.target.parentNode.parentNode.parentNode.parentNode.parentNode.removeChild(
+    e.target.parentNode.parentNode.parentNode.parentNode
+  );
+};
+
+const editTask = (e) => {
+  if (!e) e = window.event;
+
+  const targetID = e.target.id;
+  const type = e.target.tagName;
+
+  let parentNode;
+  let taskTitle;
+  let taskDescription;
+  let taskType;
+  let submitButton;
+
+  if(type === "BUTTON") {
+    parentNode = e.target.parentNode.parentNode;
+  }
+  else {
+    parentNode = e.target.parentNode.parentNode.parentNode;
+  }
+
+  taskTitle = parentNode.childNodes[3].childNodes[3];
+  taskDescription = parentNode.childNodes[3].childNodes[5];
+  taskType = parentNode.childNodes[3].childNodes[7].childNodes[1];
+  submitButton = parentNode.childNodes[5].childNodes[1];
+
+  taskTitle.setAttribute("contenteditable", "true");
+  taskDescription.setAttribute("contenteditable","true");
+  taskType.setAttribute("contenteditable", "true");
+
+  submitButton.setAttribute("onclick", "saveEdit.apply(this, arguments)");
+  submitButton.removeAttribute("data-bs-toggle");
+  submitButton.removeAttribute("data-bs-target");
+  submitButton.innerHTML = "Save Changes";
+
+};
+
+const saveEdit = (e) => {
+  if (!e) e = window.event;
+
+  const targetID = e.target.id;
+  const parentNode = e.target.parentNode.parentNode;
+
+  const taskTitle = parentNode.childNodes[3].childNodes[3];
+  const taskDescription = parentNode.childNodes[3].childNodes[5];
+  const taskType = parentNode.childNodes[3].childNodes[7].childNodes[1];
+  const submitButton = parentNode.childNodes[5].childNodes[1];
+
+  const updateData = {
+    taskTitle: taskTitle.innerHTML,
+    taskDescription: taskDescription.innerHTML,
+    taskType: taskType.innerHTML,
+  };
+
+  let stateCopy = state.taskList;
+
+  stateCopy = stateCopy.map((task) => 
+    task.id === targetID 
+      ? {
+            id: task.id,
+            title: updateData.taskTitle,
+            description: updateData.taskDescription,
+            type: updateData.taskType,
+            url: task.url,
+        } 
+      : task
+  );
+
+  state.taskList = stateCopy;
+  updateLocalStorage();
+
+  taskTitle.setAttribute("contenteditable", "false");
+  taskDescription.setAttribute("contenteditable", "false");
+  taskType.setAttribute("contenteditable", "false");
+  
+  submitButton.setAttribute("onclick", "openTask.apply(this, arguments)");
+  submitButton.setAttribute("data-bs-toggle", "modal");
+  submitButton.setAttribute("data-bs-target", "#showTask");
+  submitButton.innerHTML = "Open Task";
+};
+
+const searchTask = (e) => {
+  if (!e) e = window.event;
+
+  while (taskContents.firstChild) {
+    taskContents.removeChild(taskContents.firstChild);
+  }
+
+  const resultData = state.taskList.filter(({ title }) => {
+    return title.toLowerCase().includes(e.target.value.toLowerCase());
+  });
+
+ /*  const resultData = state.taskList.filter(({} title, type }) => 
+    title.includes(e.target.value);
+    type.includes(e.target.value);
+  ); */
+
+  resultData.map((cardData) => {
+    taskContents.insertAdjacentHTML("beforeend", htmlTaskContent(cardData))
+});
+};
+
+
 
 
 
